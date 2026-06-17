@@ -233,6 +233,8 @@ export default function Statistics() {
                 <th className="text-left py-3 px-4 font-medium text-gray-700">活动名称</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700">时间</th>
                 <th className="text-center py-3 px-4 font-medium text-gray-700">报名</th>
+                <th className="text-center py-3 px-4 font-medium text-gray-700">名额</th>
+                <th className="text-center py-3 px-4 font-medium text-gray-700">参与率</th>
                 <th className="text-center py-3 px-4 font-medium text-gray-700">签到</th>
                 <th className="text-center py-3 px-4 font-medium text-gray-700">出勤率</th>
                 <th className="text-center py-3 px-4 font-medium text-gray-700">满意度</th>
@@ -246,6 +248,15 @@ export default function Statistics() {
                     {dayjs(a.start_time).format('YYYY-MM-DD')}
                   </td>
                   <td className="py-3 px-4 text-center">{a.registered}</td>
+                  <td className="py-3 px-4 text-center">
+                    {a.max_participants || <span className="text-gray-400">不限制</span>}
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    {a.participation_rate
+                      ? <span className="text-primary-600 font-medium">{a.participation_rate}%</span>
+                      : <span className="text-gray-400">-</span>
+                    }
+                  </td>
                   <td className="py-3 px-4 text-center">{a.checked_in}</td>
                   <td className="py-3 px-4 text-center">
                     {a.registered > 0
@@ -263,7 +274,7 @@ export default function Statistics() {
               ))}
               {stats.activities.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-gray-400">
+                  <td colSpan="8" className="py-8 text-center text-gray-400">
                     暂无活动记录
                   </td>
                 </tr>

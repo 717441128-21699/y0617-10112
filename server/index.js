@@ -259,11 +259,35 @@ app.post('/api/activities/:id/register', (req, res) => {
     .find({ activity_id: activityId, user_id })
     .value();
 
+  if (status === 'confirmed') {
+    const currentConfirmed = db.get('registrations')
+      .filter({ activity_id: activityId, status: 'confirmed' })
+      .size()
+      .value();
+    
+    if (activity.max_participants && currentConfirmed >= activity.max_participants) {
+      if (!existing || existing.status !== 'confirmed') {
+        return res.status(400).json({ error: `名额已满（${activity.max_participants}人），无法继续报名` });
+      }
+    }
+  }
+
   if (existing) {
+    const wasConfirmed = existing.status === 'confirmed';
     db.get('registrations')
       .find({ id: existing.id })
       .assign({ status, decline_reason: decline_reason || null })
       .write();
+    
+    if (wasConfirmed && status === 'declined') {
+      const activityTeams = db.get('teams')
+        .filter({ activity_id: activityId })
+        .map('id')
+        .value();
+      db.get('team_members')
+        .remove((tm) => activityTeams.includes(tm.team_id) && tm.user_id === user_id)
+        .write();
+    }
   } else {
     db.get('registrations').push({
       id: nextId('registrations'),
@@ -275,34 +299,36 @@ app.post('/api/activities/:id/register', (req, res) => {
     }).write();
   }
 
-  if (activity.grouping_type === 'department' && status === 'confirmed') {
-    const user = db.get('users').find({ id: user_id }).value();
-    if (user) {
-      const deptName = user.department || '未分组';
-      let team = db.get('teams')
-        .find({ activity_id: activityId, name: deptName })
-        .value();
-      if (!team) {
-        const teamId = nextId('teams');
-        team = {
-          id: teamId,
-          activity_id: activityId,
-          name: deptName,
-          max_members: 50,
-          created_at: new Date().toISOString(),
-        };
-        db.get('teams').push(team).write();
-      }
-      const existingMember = db.get('team_members')
-        .find({ team_id: team.id, user_id })
-        .value();
-      if (!existingMember) {
-        db.get('team_members').push({
-          id: nextId('team_members'),
-          team_id: team.id,
-          user_id,
-          joined_at: new Date().toISOString(),
-        }).write();
+  if (status === 'confirmed') {
+    if (activity.grouping_type === 'department') {
+      const user = db.get('users').find({ id: user_id }).value();
+      if (user) {
+        const deptName = user.department || '未分组';
+        let team = db.get('teams')
+          .find({ activity_id: activityId, name: deptName })
+          .value();
+        if (!team) {
+          const teamId = nextId('teams');
+          team = {
+            id: teamId,
+            activity_id: activityId,
+            name: deptName,
+            max_members: 50,
+            created_at: new Date().toISOString(),
+          };
+          db.get('teams').push(team).write();
+        }
+        const existingMember = db.get('team_members')
+          .find({ team_id: team.id, user_id })
+          .value();
+        if (!existingMember) {
+          db.get('team_members').push({
+            id: nextId('team_members'),
+            team_id: team.id,
+            user_id,
+            joined_at: new Date().toISOString(),
+          }).write();
+        }
       }
     }
   }
@@ -398,13 +424,21 @@ app.post('/api/activities/:id/expenses', (req, res) => {
   const activityId = parseInt(req.params.id);
   const { item_name, amount, note } = req.body;
 
+  const parsedAmount = parseFloat(amount);
+  if (!item_name || item_name.trim() === '') {
+    return res.status(400).json({ error: '请填写费用项目名称' });
+  }
+  if (isNaN(parsedAmount) || !isFinite(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ error: '金额必须为正数，请输入有效的金额' });
+  }
+
   const id = nextId('expenses');
   const expense = {
     id,
     activity_id: activityId,
-    item_name,
-    amount: parseFloat(amount),
-    note: note || null,
+    item_name: item_name.trim(),
+    amount: Number(parsedAmount.toFixed(2)),
+    note: note && note.trim() !== '' ? note.trim() : null,
     created_at: new Date().toISOString(),
   };
 
@@ -481,14 +515,19 @@ app.get('/api/stats/summary', (req, res) => {
       const avg_rating = reviews.length > 0
         ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
         : 0;
+      const participation_rate = a.max_participants
+        ? ((registered / a.max_participants) * 100).toFixed(1)
+        : null;
       return {
         id: a.id,
         title: a.title,
         start_time: a.start_time,
+        max_participants: a.max_participants,
         registered,
         checked_in,
         avg_rating,
         review_count: reviews.length,
+        participation_rate,
       };
     });
 

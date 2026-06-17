@@ -99,16 +99,25 @@ export default function ActivityDetail({ currentUser }) {
 
   const handleAddExpense = async (e) => {
     e.preventDefault()
-    if (!expenseForm.item_name || !expenseForm.amount) return
+    if (!expenseForm.item_name || !expenseForm.item_name.trim()) {
+      alert('请填写费用项目名称')
+      return
+    }
+    const amount = parseFloat(expenseForm.amount)
+    if (isNaN(amount) || !isFinite(amount) || amount <= 0) {
+      alert('请输入有效的金额，必须大于0')
+      return
+    }
     try {
       await activityApi.addExpense(id, {
-        ...expenseForm,
-        amount: parseFloat(expenseForm.amount),
+        item_name: expenseForm.item_name.trim(),
+        amount: amount,
+        note: expenseForm.note?.trim() || '',
       })
       setExpenseForm({ item_name: '', amount: '', note: '' })
       loadActivity()
     } catch (err) {
-      alert('添加失败')
+      alert(err.response?.data?.error || '添加失败')
     }
   }
 
@@ -230,9 +239,24 @@ export default function ActivityDetail({ currentUser }) {
             {dayjs(activity.deadline).format('YYYY-MM-DD HH:mm')}
           </p>
           <p className="text-sm text-gray-500">
-            {activity.registered_count}
+            {confirmedRegistrations.length}
             {activity.max_participants ? ` / ${activity.max_participants}` : ''} 人报名
+            {activity.max_participants && confirmedRegistrations.length >= activity.max_participants && (
+              <span className="ml-2 text-red-500 font-medium">名额已满</span>
+            )}
           </p>
+          {activity.max_participants && (
+            <div className="mt-2 w-full bg-gray-100 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  confirmedRegistrations.length >= activity.max_participants
+                    ? 'bg-red-500'
+                    : 'bg-primary-500'
+                }`}
+                style={{ width: `${Math.min((confirmedRegistrations.length / activity.max_participants) * 100, 100)}%` }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -268,9 +292,17 @@ export default function ActivityDetail({ currentUser }) {
             {registerStatus !== 'confirmed' && !isDeadlinePassed && (
               <button
                 onClick={() => handleRegister('confirmed')}
-                className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+                disabled={activity.max_participants && confirmedRegistrations.length >= activity.max_participants}
+                className={`px-6 py-2.5 rounded-lg font-medium transition ${
+                  activity.max_participants && confirmedRegistrations.length >= activity.max_participants
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
               >
-                确认参加
+                {activity.max_participants && confirmedRegistrations.length >= activity.max_participants
+                  ? '名额已满'
+                  : '确认参加'
+                }
               </button>
             )}
             {registerStatus !== 'declined' && !isDeadlinePassed && (

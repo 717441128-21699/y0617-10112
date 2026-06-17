@@ -4,6 +4,7 @@ import ActivityList from './pages/ActivityList.jsx'
 import ActivityDetail from './pages/ActivityDetail.jsx'
 import CreateActivity from './pages/CreateActivity.jsx'
 import Statistics from './pages/Statistics.jsx'
+import Review from './pages/Review.jsx'
 import Login from './pages/Login.jsx'
 
 function App() {
@@ -81,6 +82,16 @@ function App() {
                 >
                   数据统计
                 </Link>
+                <Link
+                  to="/review"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/review'
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  活动复盘
+                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -112,6 +123,7 @@ function App() {
           <Route path="/create" element={<CreateActivity currentUser={currentUser} />} />
           <Route path="/edit/:id" element={<CreateActivity currentUser={currentUser} isEdit />} />
           <Route path="/statistics" element={<Statistics />} />
+          <Route path="/review" element={<Review />} />
         </Routes>
       </main>
     </div>

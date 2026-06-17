@@ -30,10 +30,12 @@ export const teamApi = {
 
 export const expenseApi = {
   delete: (id) => api.delete(`/expenses/${id}`),
+  updateStatus: (id, data) => api.put(`/expenses/${id}`, data),
 }
 
 export const statsApi = {
   getSummary: () => api.get('/stats/summary'),
+  getReview: (params) => api.get('/stats/review', { params }),
 }
 
 export default api

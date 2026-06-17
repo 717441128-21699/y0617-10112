@@ -32,9 +32,23 @@ export default function ActivityDetail({ currentUser }) {
   const [registerStatus, setRegisterStatus] = useState(null)
   const [declineReason, setDeclineReason] = useState('')
   const [showDeclineModal, setShowDeclineModal] = useState(false)
-  const [expenseForm, setExpenseForm] = useState({ item_name: '', amount: '', note: '' })
+  const [expenseForm, setExpenseForm] = useState({ item_name: '', amount: '', note: '', category: '其他', reimbursement_status: '待报销' })
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' })
+  const [expenseFilter, setExpenseFilter] = useState('all')
+  const [expandedDept, setExpandedDept] = useState(null)
   const isHR = currentUser?.role === 'hr'
+
+  const expenseCategories = ['餐饮', '交通', '场地', '住宿', '礼品', '其他']
+
+  const isValidAmount = (value) => {
+    if (!value || !String(value).trim()) return false
+    const str = String(value).trim()
+    if (!/^\d*\.?\d+$/.test(str)) return false
+    const num = parseFloat(str)
+    if (isNaN(num) || !isFinite(num) || num <= 0) return false
+    if (str.includes('.') && str.split('.')[1].length > 2) return false
+    return true
+  }
 
   const loadActivity = async () => {
     setLoading(true)
@@ -103,21 +117,31 @@ export default function ActivityDetail({ currentUser }) {
       alert('请填写费用项目名称')
       return
     }
-    const amount = parseFloat(expenseForm.amount)
-    if (isNaN(amount) || !isFinite(amount) || amount <= 0) {
-      alert('请输入有效的金额，必须大于0')
+    if (!isValidAmount(expenseForm.amount)) {
+      alert('金额格式不正确，请输入大于0的有效金额（最多两位小数）')
       return
     }
     try {
       await activityApi.addExpense(id, {
         item_name: expenseForm.item_name.trim(),
-        amount: amount,
+        amount: parseFloat(expenseForm.amount),
         note: expenseForm.note?.trim() || '',
+        category: expenseForm.category,
+        reimbursement_status: expenseForm.reimbursement_status,
       })
-      setExpenseForm({ item_name: '', amount: '', note: '' })
+      setExpenseForm({ item_name: '', amount: '', note: '', category: '其他', reimbursement_status: '待报销' })
       loadActivity()
     } catch (err) {
       alert(err.response?.data?.error || '添加失败')
+    }
+  }
+
+  const handleUpdateExpenseStatus = async (expenseId, status) => {
+    try {
+      await expenseApi.updateStatus(expenseId, { reimbursement_status: status })
+      loadActivity()
+    } catch (err) {
+      alert('更新失败')
     }
   }
 
@@ -271,6 +295,16 @@ export default function ActivityDetail({ currentUser }) {
                   <p className="text-sm text-gray-500">期待与您相见！</p>
                 </div>
               </div>
+            ) : registerStatus === 'waitlist' ? (
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">⏳</span>
+                <div>
+                  <p className="font-medium text-yellow-700">您已加入候补队列</p>
+                  <p className="text-sm text-gray-500">
+                    当前候补第 {activity.waitlist.find((w) => w.user_id === currentUser.id)?.waitlist_position || '-'} 位，有空位将自动转正
+                  </p>
+                </div>
+              </div>
             ) : registerStatus === 'declined' ? (
               <div className="flex items-center gap-2">
                 <span className="text-2xl">❌</span>
@@ -288,7 +322,7 @@ export default function ActivityDetail({ currentUser }) {
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {registerStatus !== 'confirmed' && !isDeadlinePassed && (
               <button
                 onClick={() => handleRegister('confirmed')}
@@ -303,6 +337,15 @@ export default function ActivityDetail({ currentUser }) {
                   ? '名额已满'
                   : '确认参加'
                 }
+              </button>
+            )}
+            {activity.max_participants && confirmedRegistrations.length >= activity.max_participants && 
+             registerStatus !== 'waitlist' && registerStatus !== 'confirmed' && !isDeadlinePassed && (
+              <button
+                onClick={() => handleRegister('waitlist')}
+                className="px-6 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition"
+              >
+                加入候补
               </button>
             )}
             {registerStatus !== 'declined' && !isDeadlinePassed && (
@@ -381,16 +424,116 @@ export default function ActivityDetail({ currentUser }) {
 
         {activeTab === 'registrations' && (
           <div>
-            <div className="flex gap-4 mb-6">
-              <div className="flex-1 bg-green-50 rounded-lg p-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-green-50 rounded-lg p-4">
                 <p className="text-3xl font-bold text-green-600">{confirmedRegistrations.length}</p>
                 <p className="text-sm text-green-700">确认参加</p>
               </div>
-              <div className="flex-1 bg-red-50 rounded-lg p-4">
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <p className="text-3xl font-bold text-yellow-600">{activity.waitlist?.length || 0}</p>
+                <p className="text-sm text-yellow-700">候补队列</p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-4">
                 <p className="text-3xl font-bold text-red-600">{declinedRegistrations.length}</p>
                 <p className="text-sm text-red-700">无法参加</p>
               </div>
             </div>
+
+            {activity.waitlist && activity.waitlist.length > 0 && (
+              <div className="mb-6">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <span>⏳</span> 候补队列
+                </h4>
+                <div className="space-y-2">
+                  {activity.waitlist.map((w) => (
+                    <div key={w.id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center justify-center w-8 h-8 bg-yellow-200 text-yellow-700 font-bold rounded-full">
+                          {w.waitlist_position}
+                        </span>
+                        <div>
+                          <p className="font-medium">{w.user_name}</p>
+                          <p className="text-sm text-gray-500">{w.department}</p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                        候补中
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isHR && activity.deptStats && (
+              <div className="mb-6">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <span>📊</span> 报名分析
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">按部门统计</h5>
+                    <div className="space-y-2">
+                      {activity.deptStats.map((d) => (
+                        <div key={d.department} className="border rounded-lg overflow-hidden">
+                          <div
+                            className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+                            onClick={() => setExpandedDept(expandedDept === d.department ? null : d.department)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-400">{expandedDept === d.department ? '▼' : '▶'}</span>
+                              <span className="font-medium">{d.department || '未分配'}</span>
+                            </div>
+                            <div className="flex gap-3 text-sm">
+                              <span className="text-green-600">✓ {d.confirmed}</span>
+                              <span className="text-yellow-600">⏳ {d.waitlist}</span>
+                              <span className="text-red-600">✗ {d.declined}</span>
+                              <span className="text-gray-500">- {d.no_response}</span>
+                              <span className="font-medium">共 {d.total} 人</span>
+                            </div>
+                          </div>
+                          {expandedDept === d.department && (
+                            <div className="p-3 bg-white space-y-1 max-h-40 overflow-y-auto">
+                              {d.users.map((m) => (
+                                <div key={m.id} className="flex items-center justify-between py-1 text-sm">
+                                  <span>{m.name}</span>
+                                  <span className={`px-2 py-0.5 rounded text-xs ${
+                                    m.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                    m.status === 'waitlist' ? 'bg-yellow-100 text-yellow-700' :
+                                    m.status === 'declined' ? 'bg-red-100 text-red-700' :
+                                    'bg-gray-100 text-gray-500'
+                                  }`}>
+                                    {m.status === 'confirmed' ? '已报名' :
+                                     m.status === 'waitlist' ? '候补' :
+                                     m.status === 'declined' ? '已拒绝' : '未响应'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {activity.declineReasonList && activity.declineReasonList.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">拒绝原因分布</h5>
+                      <div className="space-y-2">
+                        {activity.declineReasonList.map((item) => (
+                          <div key={item.reason} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span className="text-sm">{item.reason || '未填写原因'}</span>
+                            <span className="text-sm font-medium text-red-600">{item.count} 人</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               {activity.registrations.map((reg) => (
                 <div
@@ -408,9 +551,12 @@ export default function ActivityDetail({ currentUser }) {
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       reg.status === 'confirmed'
                         ? 'bg-green-100 text-green-700'
+                        : reg.status === 'waitlist'
+                        ? 'bg-yellow-100 text-yellow-700'
                         : 'bg-red-100 text-red-700'
                     }`}>
-                      {reg.status === 'confirmed' ? '参加' : '不参加'}
+                      {reg.status === 'confirmed' ? '参加' : 
+                       reg.status === 'waitlist' ? '候补' : '不参加'}
                     </span>
                     {reg.decline_reason && (
                       <p className="text-xs text-gray-500 mt-1">{reg.decline_reason}</p>
@@ -521,7 +667,7 @@ export default function ActivityDetail({ currentUser }) {
         {activeTab === 'expenses' && (
           <div>
             {activity.expenses.length > 0 && (
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-yellow-50 rounded-lg p-4">
                   <p className="text-sm text-yellow-700 mb-1">总费用</p>
                   <p className="text-3xl font-bold text-yellow-600">¥{activity.totalExpense.toFixed(2)}</p>
@@ -530,6 +676,26 @@ export default function ActivityDetail({ currentUser }) {
                   <p className="text-sm text-green-700 mb-1">人均费用</p>
                   <p className="text-3xl font-bold text-green-600">¥{activity.perPersonExpense}</p>
                 </div>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <p className="text-sm text-blue-700 mb-1">待报销</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    ¥{activity.statusTotals?.['待报销'] ? activity.statusTotals['待报销'].toFixed(2) : '0.00'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {activity.categoryTotals && Object.keys(activity.categoryTotals).length > 0 && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium mb-3">分类合计</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {Object.entries(activity.categoryTotals).map(([cat, amount]) => (
+                    <div key={cat} className="bg-white p-3 rounded-lg text-center">
+                      <p className="text-xs text-gray-500">{cat}</p>
+                      <p className="font-bold text-gray-800">¥{amount.toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -537,7 +703,7 @@ export default function ActivityDetail({ currentUser }) {
               <form onSubmit={handleAddExpense} className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-medium mb-3">添加费用明细</h4>
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                  <div className="md:col-span-5">
+                  <div className="md:col-span-3">
                     <input
                       type="text"
                       placeholder="费用项目（如：餐饮费、场地费）"
@@ -546,17 +712,37 @@ export default function ActivityDetail({ currentUser }) {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-2">
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
                       placeholder="金额 (¥)"
                       value={expenseForm.amount}
                       onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-2">
+                    <select
+                      value={expenseForm.category}
+                      onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {expenseCategories.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <select
+                      value={expenseForm.reimbursement_status}
+                      onChange={(e) => setExpenseForm({ ...expenseForm, reimbursement_status: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="待报销">待报销</option>
+                      <option value="已报销">已报销</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
                     <input
                       type="text"
                       placeholder="备注"
@@ -577,22 +763,79 @@ export default function ActivityDetail({ currentUser }) {
               </form>
             )}
 
+            {activity.expenses.length > 0 && (
+              <div className="flex gap-2 mb-3 flex-wrap">
+                <button
+                  onClick={() => setExpenseFilter('all')}
+                  className={`px-3 py-1 rounded-full text-sm transition ${
+                    expenseFilter === 'all' ? 'bg-primary-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  全部
+                </button>
+                {expenseCategories.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setExpenseFilter(c)}
+                    className={`px-3 py-1 rounded-full text-sm transition ${
+                      expenseFilter === c ? 'bg-primary-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">项目</th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">类型</th>
                     <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">备注</th>
                     <th className="text-right px-4 py-3 text-sm font-medium text-gray-700">金额</th>
-                    {isHR && <th className="px-4 py-3 w-16"></th>}
+                    <th className="text-center px-4 py-3 text-sm font-medium text-gray-700">报销状态</th>
+                    {isHR && <th className="px-4 py-3 w-20"></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {activity.expenses.map((e) => (
+                  {activity.expenses
+                    .filter((e) => expenseFilter === 'all' || e.category === expenseFilter)
+                    .map((e) => (
                     <tr key={e.id} className="border-t border-gray-100">
                       <td className="px-4 py-3">{e.item_name}</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                          {e.category}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-gray-500">{e.note || '-'}</td>
                       <td className="px-4 py-3 text-right font-medium">¥{e.amount.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-center">
+                        {isHR ? (
+                          <select
+                            value={e.reimbursement_status || '待报销'}
+                            onChange={(ev) => handleUpdateExpenseStatus(e.id, ev.target.value)}
+                            className={`px-2 py-1 rounded text-xs font-medium border-none outline-none cursor-pointer ${
+                              e.reimbursement_status === '已报销'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-orange-100 text-orange-700'
+                            }`}
+                          >
+                            <option value="待报销">待报销</option>
+                            <option value="已报销">已报销</option>
+                          </select>
+                        ) : (
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            e.reimbursement_status === '已报销'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-orange-100 text-orange-700'
+                          }`}>
+                            {e.reimbursement_status || '待报销'}
+                          </span>
+                        )}
+                      </td>
                       {isHR && (
                         <td className="px-4 py-3 text-right">
                           <button
@@ -605,18 +848,23 @@ export default function ActivityDetail({ currentUser }) {
                       )}
                     </tr>
                   ))}
-                  {activity.expenses.length === 0 && (
+                  {activity.expenses.filter((e) => expenseFilter === 'all' || e.category === expenseFilter).length === 0 && (
                     <tr>
-                      <td colSpan={isHR ? 4 : 3} className="text-center text-gray-500 py-8">
+                      <td colSpan={isHR ? 6 : 5} className="text-center text-gray-500 py-8">
                         暂无费用记录
                       </td>
                     </tr>
                   )}
-                  {activity.expenses.length > 0 && (
+                  {activity.expenses.filter((e) => expenseFilter === 'all' || e.category === expenseFilter).length > 0 && (
                     <tr className="border-t-2 border-gray-200 bg-gray-50 font-semibold">
-                      <td className="px-4 py-3">合计</td>
+                      <td className="px-4 py-3" colSpan={3}>合计</td>
+                      <td className="px-4 py-3 text-right text-lg">
+                        ¥{activity.expenses
+                          .filter((e) => expenseFilter === 'all' || e.category === expenseFilter)
+                          .reduce((sum, e) => sum + e.amount, 0)
+                          .toFixed(2)}
+                      </td>
                       <td className="px-4 py-3"></td>
-                      <td className="px-4 py-3 text-right text-lg">¥{activity.totalExpense.toFixed(2)}</td>
                       {isHR && <td></td>}
                     </tr>
                   )}

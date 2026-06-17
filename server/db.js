@@ -57,10 +57,10 @@ db.defaults({
     },
   ],
   registrations: [
-    { id: 1, activity_id: 1, user_id: 3, status: 'confirmed', decline_reason: null, registered_at: '2024-09-21T10:00:00' },
-    { id: 2, activity_id: 1, user_id: 4, status: 'confirmed', decline_reason: null, registered_at: '2024-09-21T11:00:00' },
-    { id: 3, activity_id: 1, user_id: 5, status: 'confirmed', decline_reason: null, registered_at: '2024-09-22T09:00:00' },
-    { id: 4, activity_id: 1, user_id: 6, status: 'declined', decline_reason: '家中有事', registered_at: '2024-09-22T10:00:00' },
+    { id: 1, activity_id: 1, user_id: 3, status: 'confirmed', decline_reason: null, waitlist_position: null, registered_at: '2024-09-21T10:00:00' },
+    { id: 2, activity_id: 1, user_id: 4, status: 'confirmed', decline_reason: null, waitlist_position: null, registered_at: '2024-09-21T11:00:00' },
+    { id: 3, activity_id: 1, user_id: 5, status: 'confirmed', decline_reason: null, waitlist_position: null, registered_at: '2024-09-22T09:00:00' },
+    { id: 4, activity_id: 1, user_id: 6, status: 'declined', decline_reason: '家中有事', waitlist_position: null, registered_at: '2024-09-22T10:00:00' },
   ],
   teams: [
     { id: 1, activity_id: 1, name: '技术部', max_members: 50, created_at: '2024-09-20T10:00:00' },
@@ -80,9 +80,9 @@ db.defaults({
     { id: 2, activity_id: 1, user_id: 4, checked_in_at: '2024-10-15T09:20:00' },
   ],
   expenses: [
-    { id: 1, activity_id: 1, item_name: '场地租赁费', amount: 5000, note: '两天场地', created_at: '2024-10-17T10:00:00' },
-    { id: 2, activity_id: 1, item_name: '餐饮费', amount: 3000, note: '两正餐一早餐', created_at: '2024-10-17T10:05:00' },
-    { id: 3, activity_id: 1, item_name: '交通费', amount: 1500, note: '大巴租赁', created_at: '2024-10-17T10:10:00' },
+    { id: 1, activity_id: 1, item_name: '场地租赁费', category: '场地', amount: 5000, reimbursement_status: '已报销', note: '两天场地', created_at: '2024-10-17T10:00:00' },
+    { id: 2, activity_id: 1, item_name: '餐饮费', category: '餐饮', amount: 3000, reimbursement_status: '待报销', note: '两正餐一早餐', created_at: '2024-10-17T10:05:00' },
+    { id: 3, activity_id: 1, item_name: '交通费', category: '交通', amount: 1500, reimbursement_status: '待报销', note: '大巴租赁', created_at: '2024-10-17T10:10:00' },
   ],
   reviews: [
     { id: 1, activity_id: 1, user_id: 3, rating: 5, comment: '活动组织得很好，大家都玩得很开心！', created_at: '2024-10-18T10:00:00' },

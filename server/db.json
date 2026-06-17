@@ -6,7 +6,7 @@
       "department": "人力资源部",
       "role": "hr",
       "avatar": "👨‍💼",
-      "created_at": "2026-06-17T03:48:22.508Z"
+      "created_at": "2026-06-17T04:23:37.289Z"
     },
     {
       "id": 2,
@@ -14,7 +14,7 @@
       "department": "技术部",
       "role": "hr",
       "avatar": "👩‍💼",
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 3,
@@ -22,7 +22,7 @@
       "department": "技术部",
       "role": "employee",
       "avatar": "👨‍💻",
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 4,
@@ -30,7 +30,7 @@
       "department": "设计部",
       "role": "employee",
       "avatar": "👩‍🎨",
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 5,
@@ -38,7 +38,7 @@
       "department": "技术部",
       "role": "employee",
       "avatar": "👨‍🔬",
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 6,
@@ -46,7 +46,7 @@
       "department": "产品部",
       "role": "employee",
       "avatar": "👩‍💻",
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 7,
@@ -54,7 +54,7 @@
       "department": "运营部",
       "role": "employee",
       "avatar": "👨‍💼",
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 8,
@@ -62,7 +62,7 @@
       "department": "市场部",
       "role": "employee",
       "avatar": "👩‍💼",
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     }
   ],
   "activities": [
@@ -87,16 +87,16 @@
       "title": "技术部月度聚餐",
       "description": "技术部同事聚餐交流",
       "location": "市中心海鲜酒楼",
-      "start_time": "2026-06-24T03:48:00",
-      "end_time": "2026-06-24T06:48:00",
-      "deadline": "2026-06-22T03:48:00",
+      "start_time": "2026-06-24T04:23:00",
+      "end_time": "2026-06-24T07:23:00",
+      "deadline": "2026-06-22T04:23:00",
       "max_participants": 20,
       "fee_type": "subsidy",
       "fee_description": "公司补贴80%，个人承担20%",
       "grouping_type": "free",
       "status": "published",
       "created_by": 2,
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     }
   ],
   "registrations": [
@@ -106,6 +106,7 @@
       "user_id": 3,
       "status": "confirmed",
       "decline_reason": null,
+      "waitlist_position": null,
       "registered_at": "2024-09-21T10:00:00"
     },
     {
@@ -114,6 +115,7 @@
       "user_id": 4,
       "status": "confirmed",
       "decline_reason": null,
+      "waitlist_position": null,
       "registered_at": "2024-09-21T11:00:00"
     },
     {
@@ -122,6 +124,7 @@
       "user_id": 5,
       "status": "confirmed",
       "decline_reason": null,
+      "waitlist_position": null,
       "registered_at": "2024-09-22T09:00:00"
     },
     {
@@ -130,6 +133,7 @@
       "user_id": 6,
       "status": "declined",
       "decline_reason": "家中有事",
+      "waitlist_position": null,
       "registered_at": "2024-09-22T10:00:00"
     }
   ],
@@ -153,28 +157,28 @@
       "activity_id": 2,
       "name": "第1小队",
       "max_members": 10,
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 4,
       "activity_id": 2,
       "name": "第2小队",
       "max_members": 10,
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 5,
       "activity_id": 2,
       "name": "第3小队",
       "max_members": 10,
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     },
     {
       "id": 6,
       "activity_id": 2,
       "name": "第4小队",
       "max_members": 10,
-      "created_at": "2026-06-17T03:48:22.509Z"
+      "created_at": "2026-06-17T04:23:37.290Z"
     }
   ],
   "team_members": [
@@ -216,7 +220,9 @@
       "id": 1,
       "activity_id": 1,
       "item_name": "场地租赁费",
+      "category": "场地",
       "amount": 5000,
+      "reimbursement_status": "已报销",
       "note": "两天场地",
       "created_at": "2024-10-17T10:00:00"
     },
@@ -224,7 +230,9 @@
       "id": 2,
       "activity_id": 1,
       "item_name": "餐饮费",
+      "category": "餐饮",
       "amount": 3000,
+      "reimbursement_status": "待报销",
       "note": "两正餐一早餐",
       "created_at": "2024-10-17T10:05:00"
     },
@@ -232,7 +240,9 @@
       "id": 3,
       "activity_id": 1,
       "item_name": "交通费",
+      "category": "交通",
       "amount": 1500,
+      "reimbursement_status": "待报销",
       "note": "大巴租赁",
       "created_at": "2024-10-17T10:10:00"
     }

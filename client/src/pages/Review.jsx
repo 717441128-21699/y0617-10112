@@ -31,7 +31,7 @@ export default function Review() {
   })
 
   const statusMap = {
-    pending: { label: '即将开始', color: 'blue' },
+    pending: { label: '未开始', color: 'blue' },
     ongoing: { label: '进行中', color: 'green' },
     completed: { label: '已结束', color: 'gray' },
   }
@@ -73,7 +73,7 @@ export default function Review() {
             className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">全部状态</option>
-            <option value="pending">即将开始</option>
+            <option value="pending">未开始</option>
             <option value="ongoing">进行中</option>
             <option value="completed">已结束</option>
           </select>

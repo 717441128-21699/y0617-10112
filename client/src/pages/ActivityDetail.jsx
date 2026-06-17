@@ -4,11 +4,9 @@ import dayjs from 'dayjs'
 import { activityApi, teamApi, expenseApi } from '../api.js'
 
 const statusMap = {
-  draft: { label: '草稿', color: 'bg-gray-100 text-gray-700' },
-  published: { label: '报名中', color: 'bg-green-100 text-green-700' },
-  ongoing: { label: '进行中', color: 'bg-blue-100 text-blue-700' },
+  pending: { label: '未开始', color: 'bg-blue-100 text-blue-700' },
+  ongoing: { label: '进行中', color: 'bg-green-100 text-green-700' },
   completed: { label: '已结束', color: 'bg-purple-100 text-purple-700' },
-  cancelled: { label: '已取消', color: 'bg-red-100 text-red-700' },
 }
 
 const feeTypeMap = {
